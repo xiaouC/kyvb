@@ -33,6 +33,8 @@ public class FlySynthesizer {
     private String mStreamType = "3";           // 播放器音频流类型
     private String mRequestFocus = "true";      // 播放合成音频打断音乐播放，默认为true
 
+    private FlyHelper.onFlySpeakListener mFlySpeakListener = null;
+
 	/**
 	 * 初始化监听。
 	 */
@@ -128,9 +130,9 @@ public class FlySynthesizer {
 				FlyHelper.getInstance().showTip( error.getPlainDescription( true ) );
 			}
 
-            // 
-            Intent speakEndIntent = new Intent( FlyHelper.FLY_SPEAK_END );
-            mContext.sendBroadcast( speakEndIntent );
+            if( mFlySpeakListener != null ) {
+                mFlySpeakListener.onCompleted();
+            }
 		}
 
 		@Override
@@ -144,7 +146,9 @@ public class FlySynthesizer {
 		}
 	};
 
-    public void startSpeaking( String text ) {
+    public void startSpeaking( String text, String savePath, FlyHelper.onFlySpeakListener fly_speak_listener ) {
+        mFlySpeakListener = fly_speak_listener;
+
         // 清空参数
         mTts.setParameter( SpeechConstant.PARAMS, null );
         // 根据合成引擎设置相应参数
@@ -162,10 +166,12 @@ public class FlySynthesizer {
         // 设置播放合成音频打断音乐播放，默认为true
         mTts.setParameter( SpeechConstant.KEY_REQUEST_FOCUS, mRequestFocus );
 
-        //// 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
-        //// 注：AUDIO_FORMAT参数语记需要更新版本才能生效
-        //mTts.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
-        //mTts.setParameter(SpeechConstant.TTS_AUDIO_PATH, Environment.getExternalStorageDirectory()+"/msc/tts.wav");
+        // 设置音频保存路径，保存音频格式支持 pcm、wav，设置路径为 sd 卡请注意 WRITE_EXTERNAL_STORAGE 权限 
+        // 注： AUDIO_FORMAT 参数语记需要更新版本才能生效 
+        if( !savePath.equals( "" ) ) {
+            mTts.setParameter( SpeechConstant.AUDIO_FORMAT, "wav" );
+            mTts.setParameter( SpeechConstant.TTS_AUDIO_PATH, savePath );
+        }
 
         int code = mTts.startSpeaking( text, mTtsListener );
         if( code != ErrorCode.SUCCESS ) {

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.io.File;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,20 +54,14 @@ public class VoiceBroadcastService extends Service {
 
     private interface ItemInfo {
         public String getItemType();
-        public String getSpeakContent();
+        public List<String> getSpeakContent();
     }
     private List<ItemInfo> recvItems = new ArrayList<ItemInfo>();
 
+    public static String saveDir = "";
     public boolean isFlySpeaking = false;
-
-	private BroadcastReceiver speakEndReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive( Context context, Intent intent ) {
-            isFlySpeaking = false;
-
-            processData();
-        }
-    };
+    public VoicePlayer mVoicePlayer = null;
+    public VoiceTypeConfig mVoiceTypeConfig = null;
 
     @Override
     public void onCreate() {
@@ -101,17 +96,18 @@ public class VoiceBroadcastService extends Service {
         startForegroundCompat( NOTIFICATION_ID, notification );
 
         FlyHelper.getInstance().init( this );
-
-        // 监听播放结束的广播
-        IntentFilter filter = new IntentFilter();
-        filter.addAction( FlyHelper.FLY_SPEAK_END );
-        registerReceiver( speakEndReceiver, filter );  
+        mVoiceTypeConfig = new VoiceTypeConfig();
+        mVoicePlayer = new VoicePlayer();
 
         for( int i=1; i < 11; ++i ) {
             final int index = i;
             recvItems.add( new ItemInfo() {
-                public String getItemType() { return "1"; }
-                public String getSpeakContent() { return String.format( "这是第 %d 条记录", index ); }
+                public String getItemType() { return VoiceTypeConfig.VT_PAY_INFO; }
+                public List<String> getSpeakContent() {
+                    List<String> ret_speak_list = new ArrayList<String>();
+                    ret_speak_list.add( formatMoney( index + 100.5f ) );
+                    return ret_speak_list;
+                }
             });
         }
 
@@ -127,6 +123,9 @@ public class VoiceBroadcastService extends Service {
     public int onStartCommand( Intent intent, int flags, int startId ) {
         super.onStartCommand( intent, flags, startId );
         Log.v( TAG, "onStartCommand" );
+
+        saveDir = intent.getStringExtra( "cacheDir" );
+        Log.v( TAG, "saveDir : " + saveDir );
 
         return START_STICKY;
     }
@@ -146,8 +145,15 @@ public class VoiceBroadcastService extends Service {
 
         stopForegroundCompat( NOTIFICATION_ID );
 
-        unregisterReceiver( speakEndReceiver );
         FlyHelper.getInstance().onDestroy( this );
+
+        // 清理缓存文件
+        File directory = getCacheDir();
+        if( directory != null && directory.exists() && directory.isDirectory() ) {
+            for( File item : directory.listFiles() ) {
+                item.delete();
+            }
+        }
 
         super.onDestroy();
     }
@@ -232,7 +238,7 @@ public class VoiceBroadcastService extends Service {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void requestData() {
+    public void requestData() {
         try {
             URL url = new URL( REQUEST_URL );
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -257,16 +263,54 @@ public class VoiceBroadcastService extends Service {
         }
     }
 
-    void processData() {
+    public String formatMoney( float money ) {
+        String ret_text = String.format( "%.02f", money );
+        Log.v( "cocos", "formatMoney money : " + money );
+        Log.v( "cocos", "formatMoney ret_text : " + ret_text );
+        if( ret_text.endsWith( ".00" ) ) {
+            ret_text.replace( ".00", "" );
+        } else {
+            if( ret_text.endsWith( "0" ) ) {
+                ret_text = ret_text.substring( 0, ret_text.length() - 1 );
+            }
+        }
+        Log.v( "cocos", "formatMoney ret_text : " + ret_text );
+        return ret_text;
+    }
+
+    public void processData() {
         if( isFlySpeaking ) {
             return;
         }
 
         if( recvItems.size() > 0 ) {
+            isFlySpeaking = true;
+
             ItemInfo item = recvItems.get( 0 );
             recvItems.remove( 0 );
 
-            FlyHelper.startSpeaking( item.getSpeakContent() );
+            mVoiceTypeConfig.getSpeakFiles( item.getItemType(), item.getSpeakContent(), new VoiceTypeConfig.getFilesListener() {
+                public void onFilesReady( List<String> files ) {
+                    if( files != null ) {
+                        mVoicePlayer.play( files, new VoicePlayer.onPlayEndListener() {
+                            public void onPlayEnd() {
+                                delayNextProcessData();
+                            }
+                        });
+                    } else {
+                        delayNextProcessData();
+                    }
+                }
+            });
         }
+    }
+
+    public void delayNextProcessData() {
+        YYSchedule.getInstance().scheduleOnceTime( 1000, new YYSchedule.onScheduleAction() {
+            public void doSomething() {
+                isFlySpeaking = false;
+                processData();
+            }
+        });
     }
 }

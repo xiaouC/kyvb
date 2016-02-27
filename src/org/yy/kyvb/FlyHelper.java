@@ -18,8 +18,11 @@ public class FlyHelper {
 
 	private Toast mToast;
 
-    public static final String FLY_SPEAK_END    = "kyvb.fly.speak.end";
     private FlySynthesizer  fly_synthesizer     = new FlySynthesizer();               // 语音合成
+
+    public interface onFlySpeakListener {
+        public void onCompleted();
+    }
 
     public void init( Context context ) {
         Log.v( "Fly", "init" );
@@ -44,7 +47,7 @@ public class FlyHelper {
     }
 
     // synthesize
-    public static void startSpeaking( String text ) { FlyHelper.getInstance().fly_synthesizer.startSpeaking( text ); }
+    public static void startSpeaking( String text, String savePath, onFlySpeakListener fly_speak_listener ) { FlyHelper.getInstance().fly_synthesizer.startSpeaking( text, savePath, fly_speak_listener ); }
     public static void stopSpeaking() { FlyHelper.getInstance().fly_synthesizer.stopSpeaking(); }
     public static void pauseSpeaking() { FlyHelper.getInstance().fly_synthesizer.pauseSpeaking(); }
     public static void resumeSpeaking() { FlyHelper.getInstance().fly_synthesizer.resumeSpeaking(); }

@@ -3,6 +3,7 @@ package org.yy.kyvb;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Intent;
+import android.util.Log;
 
 public class KYActivity extends Activity
 {
@@ -14,6 +15,7 @@ public class KYActivity extends Activity
         setContentView(R.layout.main);
 
         Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
+        intentService.putExtra( "cacheDir", getCacheDir().getPath() );
         startService( intentService );
     }
 
