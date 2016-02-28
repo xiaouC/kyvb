@@ -289,6 +289,11 @@ public class VoiceBroadcastService extends Service {
             ItemInfo item = recvItems.get( 0 );
             recvItems.remove( 0 );
 
+            //FlyHelper.getInstance().startSpeaking( "已收到" + item.getSpeakContent().get( 0 ) + "元付款", "", new FlyHelper.onFlySpeakListener() {
+            //    public void onCompleted() {
+            //        delayNextProcessData();
+            //    }
+            //});
             mVoiceTypeConfig.getSpeakFiles( item.getItemType(), item.getSpeakContent(), new VoiceTypeConfig.getFilesListener() {
                 public void onFilesReady( List<String> files ) {
                     if( files != null ) {
