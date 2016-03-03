@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">KYActivity</string>
+    <string name="app_name">款易播报</string>
+    <string name="new_record">最新记录</string>
+    <string name="submit">提交</string>
+    <string name="warning_tips">门店编号不存在</string>
 </resources>
