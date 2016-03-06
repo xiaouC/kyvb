@@ -63,6 +63,8 @@ public class VoiceBroadcastService extends Service {
     public int mScheduleIndex = -1;
     public VBRequest.onResponseListener rspListener = null;
 
+    public static int mSpeakingState = FlySynthesizer.FLY_SPEAK_END;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -87,7 +89,7 @@ public class VoiceBroadcastService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder( this );
         PendingIntent contentIntent = PendingIntent.getActivity( this, 0, new Intent( this, KYActivity.class ), 0 );
         builder.setContentIntent( contentIntent );
-        builder.setSmallIcon( R.drawable.icon );
+        builder.setSmallIcon( R.drawable.ic_launcher );
         builder.setTicker( "Voice Service Start" );
         builder.setContentTitle( "Voice Broadcast" );
         builder.setContentText( "Voice Broadcast is running." );

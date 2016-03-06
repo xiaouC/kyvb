@@ -35,6 +35,12 @@ public class FlySynthesizer {
 
     private FlyHelper.onFlySpeakListener mFlySpeakListener = null;
 
+    public static final int FLY_SPEAK_START = 1;
+    public static final int FLY_SPEAK_PAUSE = 2;
+    public static final int FLY_SPEAK_RESUME = 3;
+    public static final int FLY_SPEAK_END = 4;
+    public static final String FLY_SPEAKING_FLAG = "KYVB.FLY_SPEAKING_FLAG";
+
 	/**
 	 * 初始化监听。
 	 */
@@ -95,17 +101,23 @@ public class FlySynthesizer {
 	private SynthesizerListener mTtsListener = new SynthesizerListener() {
 		@Override
 		public void onSpeakBegin() {
-			FlyHelper.getInstance().showTip( "开始播放" );
+			//FlyHelper.getInstance().showTip( "开始播放" );
+            VoiceBroadcastService.mSpeakingState = FLY_SPEAK_START;
+            mContext.sendBroadcast( new Intent( FLY_SPEAKING_FLAG ) );
 		}
 
 		@Override
 		public void onSpeakPaused() {
-			FlyHelper.getInstance().showTip( "暂停播放" );
+			//FlyHelper.getInstance().showTip( "暂停播放" );
+            VoiceBroadcastService.mSpeakingState = FLY_SPEAK_PAUSE;
+            mContext.sendBroadcast( new Intent( FLY_SPEAKING_FLAG ) );
 		}
 
 		@Override
 		public void onSpeakResumed() {
-			FlyHelper.getInstance().showTip( "继续播放" );
+			//FlyHelper.getInstance().showTip( "继续播放" );
+            VoiceBroadcastService.mSpeakingState = FLY_SPEAK_RESUME;
+            mContext.sendBroadcast( new Intent( FLY_SPEAKING_FLAG ) );
 		}
 
 		@Override
@@ -125,7 +137,7 @@ public class FlySynthesizer {
 		@Override
 		public void onCompleted( SpeechError error ) {
 			if( error == null ) {
-				FlyHelper.getInstance().showTip( "播放完成" );
+				//FlyHelper.getInstance().showTip( "播放完成" );
 			} else if( error != null ) {
 				FlyHelper.getInstance().showTip( error.getPlainDescription( true ) );
 			}
@@ -133,6 +145,9 @@ public class FlySynthesizer {
             if( mFlySpeakListener != null ) {
                 mFlySpeakListener.onCompleted();
             }
+
+            VoiceBroadcastService.mSpeakingState = FLY_SPEAK_END;
+            mContext.sendBroadcast( new Intent( FLY_SPEAKING_FLAG ) );
 		}
 
 		@Override

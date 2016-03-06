@@ -39,6 +39,13 @@ public class KYActivity extends Activity
         }
     };
 
+    private BroadcastReceiver playMsgReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            updateMikeState();
+        }
+    };
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate( Bundle savedInstanceState )
@@ -132,11 +139,19 @@ public class KYActivity extends Activity
         filter.addAction( VoiceBroadcastService.RECV_MSG_INFO );
         registerReceiver( recvMsgReceiver, filter );  
 
+        IntentFilter filter1 = new IntentFilter();
+        filter1.addAction( FlySynthesizer.FLY_SPEAKING_FLAG );
+        registerReceiver( playMsgReceiver, filter1 );  
+
         updateListView();
+        updateMikeState();
     }
 
     @Override
     protected void onDestroy() {
+        unregisterReceiver( recvMsgReceiver );
+        unregisterReceiver( playMsgReceiver );
+
         super.onDestroy();
     }
 
@@ -232,5 +247,14 @@ public class KYActivity extends Activity
         }
 
         return ret_data;
+    }
+
+    public void updateMikeState() {
+        ImageView iv = (ImageView)findViewById( R.id.oval_state );
+        if( VoiceBroadcastService.mSpeakingState == FlySynthesizer.FLY_SPEAK_START ) {
+            iv.setImageResource( R.drawable.oval_2 );
+        } else {
+            iv.setImageResource( R.drawable.oval_1 );
+        }
     }
 }
