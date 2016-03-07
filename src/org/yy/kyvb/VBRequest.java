@@ -28,8 +28,8 @@ public class VBRequest
 {
     private static final String TAG = "cocos";
 
-    private static final String VERIFY_URL = "http://pay.kuan1.cn/kysound/index/store";
-    private static final String BROADCAST_MESSAGE_URL = "http://pay.kuan1.cn/kysound/index/get";
+    private static final String VERIFY_URL = "http://ky-test2.lecin.cn/kyapi/index.php?action=checkStorePort&controller=Voice";
+    private static final String BROADCAST_MESSAGE_URL = "http://ky-test2.lecin.cn/kyapi/index.php?action=index&controller=Voice";
     public static String ky_key = "ky_@0239732%^%$KEY";
     public static String ky_comid = "";
 
