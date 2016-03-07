@@ -26,6 +26,9 @@ import android.view.KeyEvent;
 import android.content.Context;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
 
 public class KYActivity extends Activity
 {
@@ -54,7 +57,52 @@ public class KYActivity extends Activity
 
         mActivity = this;
 
-        setContentView(R.layout.main);
+        setContentView( R.layout.main_2 );
+        fadeInOut();
+    }
+
+    @Override
+    protected void onDestroy() {
+        try {
+            unregisterReceiver( recvMsgReceiver );
+            unregisterReceiver( playMsgReceiver );
+        } catch ( IllegalArgumentException e ) {
+            if( e.getMessage().contains( "Receiver not registered" ) ) {
+                // Ignore this exception. This is exactly what is desired
+            } else {
+                // unexpected, re-throw
+                throw e;
+            }
+        }
+
+        super.onDestroy();
+    }
+
+    private void fadeInOut() {
+        ImageView ivLoading = (ImageView)findViewById( R.id.loading );
+
+        AnimationSet animSet = new AnimationSet(true);
+
+        AlphaAnimation anim_1 = new AlphaAnimation( 0, 1 );
+        anim_1.setDuration( 1500 );
+        animSet.addAnimation( anim_1 );
+
+        AlphaAnimation anim_2 = new AlphaAnimation( 1, 0 );
+        anim_2.setDuration( 1500 );
+        anim_2.setStartOffset( 2500 );
+        animSet.addAnimation( anim_2 );
+
+        ivLoading.startAnimation( animSet );
+        
+        YYSchedule.getInstance().scheduleOnceTime( 4000, new YYSchedule.onScheduleAction() {
+            public void doSomething() {
+                startView();
+            }
+        });
+    }
+
+    private void startView() {
+        setContentView( R.layout.main );
 
         final TextView tv_store_name = (TextView)findViewById( R.id.store_name );
 
@@ -145,14 +193,6 @@ public class KYActivity extends Activity
 
         updateListView();
         updateMikeState();
-    }
-
-    @Override
-    protected void onDestroy() {
-        unregisterReceiver( recvMsgReceiver );
-        unregisterReceiver( playMsgReceiver );
-
-        super.onDestroy();
     }
 
     public boolean onKeyDown( int keyCode, KeyEvent event )
