@@ -44,6 +44,7 @@ public class VoiceBroadcastService extends Service {
     private Object[] mStopForegroundArgs = new Object[1];
 
     public static boolean bIsDestroy = false;
+    public static boolean bIsRunning = false;
     public static final String RECV_MSG_INFO = "KYVB.RECV_MSG_INFO";
 
     private interface ItemInfo {
@@ -144,6 +145,22 @@ public class VoiceBroadcastService extends Service {
                 }
             }
         };
+    }
+
+    @Override
+    public int onStartCommand( Intent intent, int flags, int startId ) {
+        super.onStartCommand( intent, flags, startId );
+        Log.v( TAG, "onStartCommand" );
+        bIsRunning = true;
+        bIsDestroy = false;
+
+        recvMsgList.clear();
+        sendBroadcast( new Intent( RECV_MSG_INFO ) );
+
+        saveDir = intent.getStringExtra( "cacheDir" );
+        Log.v( TAG, "saveDir : " + saveDir );
+        times = Integer.parseInt( intent.getStringExtra( "times" ) );
+        Log.v( TAG, "times : " + times );
 
         // 马上请求一次
         VBRequest.requestBroadcastMessage( rspListener );
@@ -152,20 +169,14 @@ public class VoiceBroadcastService extends Service {
         YYSchedule.getInstance().cancelSchedule( mScheduleIndex );
         mScheduleIndex = YYSchedule.getInstance().scheduleCircle( times * 1000, new YYSchedule.onScheduleAction() {
             public void doSomething() {
+                Log.v( TAG, "bIsDestroy : " + bIsDestroy );
+                if( bIsDestroy ) {
+                    return;
+                }
+
                 VBRequest.requestBroadcastMessage( rspListener );
             }
         });
-    }
-
-    @Override
-    public int onStartCommand( Intent intent, int flags, int startId ) {
-        super.onStartCommand( intent, flags, startId );
-        Log.v( TAG, "onStartCommand" );
-
-        saveDir = intent.getStringExtra( "cacheDir" );
-        Log.v( TAG, "saveDir : " + saveDir );
-        times = intent.getIntExtra( "times", 5 );
-        Log.v( TAG, "times : " + times );
 
         return START_STICKY;
     }
@@ -180,6 +191,7 @@ public class VoiceBroadcastService extends Service {
         Log.v( TAG, "onDestroy" );
 
         bIsDestroy = true;
+        bIsRunning = false;
 
         YYSchedule.getInstance().cancelAllSchedule();
 
@@ -328,6 +340,10 @@ public class VoiceBroadcastService extends Service {
     public void delayNextProcessData() {
         YYSchedule.getInstance().scheduleOnceTime( 1000, new YYSchedule.onScheduleAction() {
             public void doSomething() {
+                if( bIsDestroy ) {
+                    return;
+                }
+
                 isFlySpeaking = false;
                 processData();
             }

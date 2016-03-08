@@ -32,11 +32,7 @@ public class YYSchedule
     public YYSchedule() {
         handler = new Handler(){
             public void handleMessage( Message msg ) {
-                if( VoiceBroadcastService.bIsDestroy ) {
-                    return;
-                }
-
-                Log.v( "cocos", "msg.what : " + msg.what );
+                Log.v( "cocos", "handleMessage msg.what : " + msg.what );
                 onScheduleAction schedule_action = all_schedule_actions.get( msg.what );
                 if( schedule_action != null ) {
                     // 如果不循环的话，就移除
@@ -46,6 +42,7 @@ public class YYSchedule
                         all_schedule_timers.remove( msg.what );
                     }
 
+                    Log.v( "cocos", "handleMessage doSomething 00000000000000000000000000000000" );
                     schedule_action.doSomething();
                 }
 
@@ -58,6 +55,7 @@ public class YYSchedule
     public int scheduleOnceTime( long delay, onScheduleAction schedule_action ) {
         final int schedule_index = nNextScheduleIndex++;
         all_schedule_actions.put( schedule_index, schedule_action );
+        Log.v( "cocos", "scheduleOnceTime schedule_index : " + schedule_index );
 
         TimerTask task = new TimerTask() {
             public void run() {
@@ -78,6 +76,7 @@ public class YYSchedule
     public int scheduleCircle( long time, onScheduleAction schedule_action ) {
         final int schedule_index = nNextScheduleIndex++;
         all_schedule_actions.put( schedule_index, schedule_action );
+        Log.v( "cocos", "scheduleCircle schedule_index : " + schedule_index );
 
         TimerTask task = new TimerTask() {
             public void run() {
@@ -96,6 +95,7 @@ public class YYSchedule
     }
 
     public void cancelSchedule( int schedule_index ) {
+        Log.v( "cocos", "cancelSchedule schedule_index : " + schedule_index );
         onScheduleAction schedule_action = all_schedule_actions.get( schedule_index );
         if( schedule_action != null ) {
             all_schedule_actions.remove( schedule_index );
@@ -105,6 +105,7 @@ public class YYSchedule
     }
 
     public void cancelAllSchedule() {
+        Log.v( "cocos", "cancelAllSchedule 3333333333333333333333333333333333333333333333333333333" );
         all_schedule_actions.clear();
 
         // 

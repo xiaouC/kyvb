@@ -29,6 +29,7 @@ import android.content.IntentFilter;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
+import android.view.animation.AccelerateInterpolator;
 
 public class KYActivity extends Activity
 {
@@ -82,6 +83,7 @@ public class KYActivity extends Activity
         ImageView ivLoading = (ImageView)findViewById( R.id.loading );
 
         AnimationSet animSet = new AnimationSet(true);
+        animSet.setInterpolator( new AccelerateInterpolator() );
 
         AlphaAnimation anim_1 = new AlphaAnimation( 0, 1 );
         anim_1.setDuration( 1500 );
@@ -93,93 +95,24 @@ public class KYActivity extends Activity
         animSet.addAnimation( anim_2 );
 
         ivLoading.startAnimation( animSet );
-        
+
+        Log.v( "cocos", "fadeInOut 111111111111111111111111111111111" );
         YYSchedule.getInstance().scheduleOnceTime( 4000, new YYSchedule.onScheduleAction() {
             public void doSomething() {
+                Log.v( "cocos", "doSomething startView 111111111111111111111111111111111" );
                 startView();
             }
         });
     }
 
     private void startView() {
+        Log.v( "cocos", "startView 222222222222222222222222222222222222222222222222222222222" );
         setContentView( R.layout.main );
-
-        final TextView tv_store_name = (TextView)findViewById( R.id.store_name );
 
         ImageButton btn = (ImageButton)findViewById( R.id.btn_setting );
         btn.setOnClickListener( new View.OnClickListener() {
             public void onClick( View v ) {
-                if( cur_show_ad != null ) {
-                    cur_show_ad.hide();
-                    cur_show_ad = null;
-                }
-
-                LayoutInflater li = LayoutInflater.from( mActivity );
-                View view = li.inflate( R.layout.setting, null );
-
-                AlertDialog.Builder builder = new AlertDialog.Builder( new ContextThemeWrapper( mActivity, R.style.setting_dlg ) );
-                builder.setView( view );
-                builder.setCancelable( true );
-
-                cur_show_ad = builder.create();
-
-                final ImageView iv = (ImageView)view.findViewById( R.id.warning_pic );
-                final TextView tv = (TextView)view.findViewById( R.id.warning_tips );
-                iv.setVisibility( View.INVISIBLE );
-                tv.setVisibility( View.INVISIBLE );
-
-                final EditText et = (EditText)view.findViewById( R.id.store_id );
-
-                // 
-                Button btn_submit = (Button)view.findViewById( R.id.btn_submit );
-                if( btn_submit != null ) {
-                    btn_submit.setOnClickListener( new View.OnClickListener () {
-                        public void onClick( View v ){
-                            //String ky_comid = "ky123456_96";
-                            VBRequest.ky_comid = et.getText().toString();
-                            VBRequest.requestVerify( new VBRequest.onResponseListener() {
-                                public void onResponse( String data ) {
-                                    Log.v( "cocos", "response data : " + data );
-                                    try {
-                                        JSONObject verify_info = new JSONObject( data );
-
-                                        int status = verify_info.getInt( "status" );
-                                        Log.v( "cocos", "status : " + status );
-                                        if( status == 1 ) {     // 成功
-                                            String msg = verify_info.getString( "msg" );
-                                            Log.v( "cocos", "msg : " + msg );
-                                            String times = verify_info.getString( "times" );
-                                            Log.v( "cocos", "times : " + times );
-                                            String store_name = verify_info.getString( "store_name" );
-                                            Log.v( "cocos", "store_name : " + store_name );
-                                            tv_store_name.setText( store_name );
-
-                                            // 服务开启
-                                            Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
-                                            intentService.putExtra( "cacheDir", getCacheDir().getPath() );
-                                            intentService.putExtra( "times", times );
-                                            startService( intentService );
-
-                                            // 关闭弹窗
-                                            if( cur_show_ad != null ) {
-                                                cur_show_ad.hide();
-                                                cur_show_ad = null;
-                                            }
-                                        } else {
-                                            iv.setVisibility( View.VISIBLE );
-                                            tv.setVisibility( View.VISIBLE );
-                                        }
-                                    } catch ( JSONException e ) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-
-                cur_show_ad.setCanceledOnTouchOutside( false );   // 设置点击 Dialog 外部任意区域关闭 Dialog
-                cur_show_ad.show();
+                showLogin();
             }
         });
 
@@ -193,6 +126,88 @@ public class KYActivity extends Activity
 
         updateListView();
         updateMikeState();
+
+        if( !VoiceBroadcastService.bIsRunning ) {
+            showLogin();
+        }
+    }
+
+    private void showLogin() {
+        if( cur_show_ad != null ) {
+            cur_show_ad.hide();
+            cur_show_ad = null;
+        }
+
+        LayoutInflater li = LayoutInflater.from( mActivity );
+        View view = li.inflate( R.layout.setting, null );
+
+        AlertDialog.Builder builder = new AlertDialog.Builder( new ContextThemeWrapper( mActivity, R.style.setting_dlg ) );
+        builder.setView( view );
+        builder.setCancelable( true );
+
+        cur_show_ad = builder.create();
+
+        final ImageView iv = (ImageView)view.findViewById( R.id.warning_pic );
+        final TextView tv = (TextView)view.findViewById( R.id.warning_tips );
+        iv.setVisibility( View.INVISIBLE );
+        tv.setVisibility( View.INVISIBLE );
+
+        final EditText et = (EditText)view.findViewById( R.id.store_id );
+
+        // 
+        Button btn_submit = (Button)view.findViewById( R.id.btn_submit );
+        if( btn_submit != null ) {
+            btn_submit.setOnClickListener( new View.OnClickListener () {
+                public void onClick( View v ){
+                    //String ky_comid = "ky123456_96";
+                    VBRequest.ky_comid = et.getText().toString();
+                    VBRequest.requestVerify( new VBRequest.onResponseListener() {
+                        public void onResponse( String data ) {
+                            Log.v( "cocos", "response data : " + data );
+                            try {
+                                JSONObject verify_info = new JSONObject( data );
+
+                                int status = verify_info.getInt( "status" );
+                                Log.v( "cocos", "status : " + status );
+                                if( status == 1 ) {     // 成功
+                                    String msg = verify_info.getString( "msg" );
+                                    Log.v( "cocos", "msg : " + msg );
+                                    String times = verify_info.getString( "times" );
+                                    Log.v( "cocos", "times : " + times );
+                                    String store_name = verify_info.getString( "store_name" );
+                                    Log.v( "cocos", "store_name : " + store_name );
+
+                                    TextView tv_store_name = (TextView)findViewById( R.id.store_name );
+                                    tv_store_name.setText( store_name );
+
+                                    // 服务开启
+                                    Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
+                                    intentService.putExtra( "cacheDir", getCacheDir().getPath() );
+                                    intentService.putExtra( "times", times );
+                                    startService( intentService );
+
+                                    updateMikeState();
+
+                                    // 关闭弹窗
+                                    if( cur_show_ad != null ) {
+                                        cur_show_ad.hide();
+                                        cur_show_ad = null;
+                                    }
+                                } else {
+                                    iv.setVisibility( View.VISIBLE );
+                                    tv.setVisibility( View.VISIBLE );
+                                }
+                            } catch ( JSONException e ) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        cur_show_ad.setCanceledOnTouchOutside( false );   // 设置点击 Dialog 外部任意区域关闭 Dialog
+        cur_show_ad.show();
     }
 
     public boolean onKeyDown( int keyCode, KeyEvent event )
