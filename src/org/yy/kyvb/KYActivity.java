@@ -31,12 +31,16 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.AccelerateInterpolator;
 import android.content.SharedPreferences;
+import android.graphics.drawable.AnimationDrawable;
+import android.content.DialogInterface;
+import android.app.Dialog;
 
 public class KYActivity extends Activity
 {
     private KYActivity mActivity;
     private AlertDialog cur_show_ad = null;
     private String mLastLoginComid = "";
+    private Dialog waiting_ad = null;
 
     private BroadcastReceiver recvMsgReceiver = new BroadcastReceiver() {
         @Override
@@ -165,49 +169,57 @@ public class KYActivity extends Activity
         if( btn_submit != null ) {
             btn_submit.setOnClickListener( new View.OnClickListener () {
                 public void onClick( View v ){
+                    showWaitingDialog();
+
                     mLastLoginComid = et.getText().toString();
                     saveSharedPreferences();
 
-                    VBRequest.ky_comid = mLastLoginComid;
-                    VBRequest.requestVerify( new VBRequest.onResponseListener() {
-                        public void onResponse( String data ) {
-                            Log.v( "cocos", "response data : " + data );
-                            try {
-                                JSONObject verify_info = new JSONObject( data );
+                    YYSchedule.getInstance().scheduleOnceTime( 100, new YYSchedule.onScheduleAction() {
+                        public void doSomething() {
+                            VBRequest.ky_comid = mLastLoginComid;
+                            VBRequest.requestVerify( new VBRequest.onResponseListener() {
+                                public void onResponse( String data ) {
+                                    hideWaitingDialog();
 
-                                int status = verify_info.getInt( "status" );
-                                Log.v( "cocos", "status : " + status );
-                                if( status == 1 ) {     // 成功
-                                    String msg = verify_info.getString( "msg" );
-                                    Log.v( "cocos", "msg : " + msg );
-                                    String times = verify_info.getString( "times" );
-                                    Log.v( "cocos", "times : " + times );
-                                    String store_name = verify_info.getString( "store_name" );
-                                    Log.v( "cocos", "store_name : " + store_name );
+                                    Log.v( "cocos", "response data : " + data );
+                                    try {
+                                        JSONObject verify_info = new JSONObject( data );
 
-                                    TextView tv_store_name = (TextView)findViewById( R.id.store_name );
-                                    tv_store_name.setText( store_name );
+                                        int status = verify_info.getInt( "status" );
+                                        Log.v( "cocos", "status : " + status );
+                                        if( status == 1 ) {     // 成功
+                                            String msg = verify_info.getString( "msg" );
+                                            Log.v( "cocos", "msg : " + msg );
+                                            String times = verify_info.getString( "times" );
+                                            Log.v( "cocos", "times : " + times );
+                                            String store_name = verify_info.getString( "store_name" );
+                                            Log.v( "cocos", "store_name : " + store_name );
 
-                                    // 服务开启
-                                    Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
-                                    intentService.putExtra( "cacheDir", getCacheDir().getPath() );
-                                    intentService.putExtra( "times", times );
-                                    startService( intentService );
+                                            TextView tv_store_name = (TextView)findViewById( R.id.store_name );
+                                            tv_store_name.setText( store_name );
 
-                                    updateMikeState();
+                                            // 服务开启
+                                            Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
+                                            intentService.putExtra( "cacheDir", getCacheDir().getPath() );
+                                            intentService.putExtra( "times", times );
+                                            startService( intentService );
 
-                                    // 关闭弹窗
-                                    if( cur_show_ad != null ) {
-                                        cur_show_ad.hide();
-                                        cur_show_ad = null;
+                                            updateMikeState();
+
+                                            // 关闭弹窗
+                                            if( cur_show_ad != null ) {
+                                                cur_show_ad.hide();
+                                                cur_show_ad = null;
+                                            }
+                                        } else {
+                                            iv.setVisibility( View.VISIBLE );
+                                            tv.setVisibility( View.VISIBLE );
+                                        }
+                                    } catch ( JSONException e ) {
+                                        e.printStackTrace();
                                     }
-                                } else {
-                                    iv.setVisibility( View.VISIBLE );
-                                    tv.setVisibility( View.VISIBLE );
                                 }
-                            } catch ( JSONException e ) {
-                                e.printStackTrace();
-                            }
+                            });
                         }
                     });
                 }
@@ -347,4 +359,26 @@ public class KYActivity extends Activity
         editor.commit();
     }
 
+    public void showWaitingDialog() {
+        if( waiting_ad != null ) {
+            return;
+        }
+
+        waiting_ad = new Dialog( this, R.style.alert_waiting );
+        View view = View.inflate( this, R.layout.alert_waiting, null );
+        waiting_ad.setContentView( view );
+
+        ImageView iv = (ImageView)view.findViewById( R.id.anim_waiting );
+        AnimationDrawable anim = (AnimationDrawable)iv.getBackground();
+        anim.start();
+
+        waiting_ad.show();
+    }
+
+    public void hideWaitingDialog() {
+        if( waiting_ad != null ) {
+            waiting_ad.hide();
+            waiting_ad = null;
+        }
+    }
 }

@@ -24,6 +24,9 @@ import android.util.Log;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import android.os.Handler;
+import android.os.Message;
+
 public class VBRequest
 {
     private static final String TAG = "cocos";
@@ -36,6 +39,16 @@ public class VBRequest
     public interface onResponseListener {
         public void onResponse( String data );
     }
+
+    private static onResponseListener mRspListener = null;
+    private static Handler handler = new Handler() {
+        public void handleMessage( Message msg ) {
+            String recvData = (String)msg.obj;
+            if( mRspListener != null ) {
+                mRspListener.onResponse( recvData );
+            }
+        }
+    };
 
     public static void requestVerify( onResponseListener rsp_listener ) {
         String ts = getTimestamp();
@@ -91,77 +104,87 @@ public class VBRequest
         requestData( BROADCAST_MESSAGE_URL, postParams, rsp_listener );
     }
 
-    public static void requestData( String requestURL, Map<String,String> postParams, onResponseListener rspListener ) {
+    public static void requestData( final String requestURL, final Map<String,String> postParams, onResponseListener rspListener ) {
         Log.v( "cocos", "requestURL : " + requestURL );
+        mRspListener = rspListener;
 
-        PrintWriter writer = null;  
-        BufferedReader reader = null;
-        HttpURLConnection connection = null;
+        new Thread(new Runnable() {
+            public void run() {
+                PrintWriter writer = null;  
+                BufferedReader reader = null;
+                HttpURLConnection connection = null;
 
-        StringBuffer params = new StringBuffer();
-        Iterator it = postParams.entrySet().iterator();
-        while( it.hasNext() ) {
-            Map.Entry element = (Map.Entry) it.next();
-            params.append(element.getKey());
-            params.append("=");
-            params.append(element.getValue());
-            params.append("&");
-        }
-        if( params.length() > 0 ) {
-            params.deleteCharAt( params.length() - 1 );
-        }
-
-        try {
-            URL url = new URL( requestURL );
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty( "accept", "*/*" );
-            connection.setRequestProperty( "connection", "Keep-Alive" );
-            connection.setRequestProperty( "Content-Length", String.valueOf( params.length() ) );
-            connection.setDoOutput( true );
-            connection.setDoInput( true );
-            // 获取URLConnection对象对应的输出流 
-            writer = new PrintWriter( connection.getOutputStream() );
-            // 发送请求参数 
-            writer.write( params.toString() );
-            // flush输出流的缓冲 
-            writer.flush();
-
-            // 根据ResponseCode判断连接是否成功 
-            int responseCode = connection.getResponseCode();
-            if( responseCode != 200 ) {
-                Log.v( TAG, "requestVerify response code : " + responseCode );
-            }
-            //connection.connect();
-
-            reader = new BufferedReader( new InputStreamReader( connection.getInputStream() ) );
-            StringBuffer readbuff = new StringBuffer();
-            String lstr = null;
-            while( ( lstr = reader.readLine() ) != null ) {
-                readbuff.append( lstr );
-            }
-
-            String recvData = readbuff.toString();
-            Log.v( TAG, "recvData : " + recvData );
-
-            rspListener.onResponse( recvData );
-        } catch( MalformedURLException e ) {
-            e.printStackTrace();
-        } catch( IOException e ) {
-            e.printStackTrace();
-        } finally {
-            if( connection != null ) {
-                connection.disconnect();
-            }
-            try {  
-                if( writer != null ) {
-                    writer.close();
+                StringBuffer params = new StringBuffer();
+                Iterator it = postParams.entrySet().iterator();
+                while( it.hasNext() ) {
+                    Map.Entry element = (Map.Entry) it.next();
+                    params.append(element.getKey());
+                    params.append("=");
+                    params.append(element.getValue());
+                    params.append("&");
                 }
-                if( reader != null ) {
-                    reader.close();
+                if( params.length() > 0 ) {
+                    params.deleteCharAt( params.length() - 1 );
                 }
-            } catch (IOException ex) {
-                ex.printStackTrace();
+
+                String recvData = "";
+                try {
+                    URL url = new URL( requestURL );
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestProperty( "accept", "*/*" );
+                    connection.setRequestProperty( "connection", "Keep-Alive" );
+                    connection.setRequestProperty( "Content-Length", String.valueOf( params.length() ) );
+                    connection.setDoOutput( true );
+                    connection.setDoInput( true );
+                    // 获取URLConnection对象对应的输出流 
+                    writer = new PrintWriter( connection.getOutputStream() );
+                    // 发送请求参数 
+                    writer.write( params.toString() );
+                    // flush输出流的缓冲 
+                    writer.flush();
+
+                    // 根据ResponseCode判断连接是否成功 
+                    int responseCode = connection.getResponseCode();
+                    if( responseCode != 200 ) {
+                        Log.v( TAG, "requestVerify response code : " + responseCode );
+                    }
+                    //connection.connect();
+
+                    reader = new BufferedReader( new InputStreamReader( connection.getInputStream() ) );
+                    StringBuffer readbuff = new StringBuffer();
+                    String lstr = null;
+                    while( ( lstr = reader.readLine() ) != null ) {
+                        readbuff.append( lstr );
+                    }
+
+                    recvData = readbuff.toString();
+
+                } catch( MalformedURLException e ) {
+                    e.printStackTrace();
+                } catch( IOException e ) {
+                    e.printStackTrace();
+                } finally {
+                    if( connection != null ) {
+                        connection.disconnect();
+                    }
+                    try {  
+                        if( writer != null ) {
+                            writer.close();
+                        }
+                        if( reader != null ) {
+                            reader.close();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    Log.v( TAG, "recvData : " + recvData );
+
+                    Message msg = new Message();
+                    msg.obj = recvData;
+                    handler.sendMessage( msg );
+                }
             }
-        }
+        }).start();
     }
 }
