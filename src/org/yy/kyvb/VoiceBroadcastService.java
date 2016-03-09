@@ -24,6 +24,7 @@ import android.util.Log;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 import android.content.Intent;
+import android.os.PowerManager;
 
 public class VoiceBroadcastService extends Service {
     private static final String TAG = "cocos";
@@ -65,12 +66,17 @@ public class VoiceBroadcastService extends Service {
     public VBRequest.onResponseListener rspListener = null;
 
     public static int mSpeakingState = FlySynthesizer.FLY_SPEAK_END;
+    private PowerManager.WakeLock wakeLock = null;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         Log.v( TAG, "onCreate" );
+
+        PowerManager pm = (PowerManager)getSystemService( Context.POWER_SERVICE );
+        wakeLock = pm.newWakeLock( PowerManager.PARTIAL_WAKE_LOCK, VoiceBroadcastService.class.getName() );
+        wakeLock.acquire();
 
         mNM = (NotificationManager)getSystemService( Context.NOTIFICATION_SERVICE );
 
@@ -192,6 +198,11 @@ public class VoiceBroadcastService extends Service {
 
         bIsDestroy = true;
         bIsRunning = false;
+
+        if( wakeLock != null ) {
+            wakeLock.release();
+            wakeLock = null;
+        }
 
         YYSchedule.getInstance().cancelAllSchedule();
 
