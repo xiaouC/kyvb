@@ -30,11 +30,13 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.AccelerateInterpolator;
+import android.content.SharedPreferences;
 
 public class KYActivity extends Activity
 {
     private KYActivity mActivity;
     private AlertDialog cur_show_ad = null;
+    private String mLastLoginComid = "";
 
     private BroadcastReceiver recvMsgReceiver = new BroadcastReceiver() {
         @Override
@@ -59,6 +61,9 @@ public class KYActivity extends Activity
         mActivity = this;
 
         setContentView( R.layout.main_2 );
+
+        loadSharedPreferences();
+
         fadeInOut();
     }
 
@@ -153,14 +158,17 @@ public class KYActivity extends Activity
         tv.setVisibility( View.INVISIBLE );
 
         final EditText et = (EditText)view.findViewById( R.id.store_id );
+        et.setText( mLastLoginComid );
 
         // 
         Button btn_submit = (Button)view.findViewById( R.id.btn_submit );
         if( btn_submit != null ) {
             btn_submit.setOnClickListener( new View.OnClickListener () {
                 public void onClick( View v ){
-                    //String ky_comid = "ky123456_96";
-                    VBRequest.ky_comid = et.getText().toString();
+                    mLastLoginComid = et.getText().toString();
+                    saveSharedPreferences();
+
+                    VBRequest.ky_comid = mLastLoginComid;
                     VBRequest.requestVerify( new VBRequest.onResponseListener() {
                         public void onResponse( String data ) {
                             Log.v( "cocos", "response data : " + data );
@@ -312,4 +320,31 @@ public class KYActivity extends Activity
             iv.setImageResource( R.drawable.oval_1 );
         }
     }
+
+    // 
+    public static String PREFER_NAME = "ky_data";
+    public static int MODE = Context.MODE_PRIVATE;
+    private boolean bIsLoading = false;
+    public void loadSharedPreferences() {
+        bIsLoading = true;
+
+        SharedPreferences share = getSharedPreferences( PREFER_NAME, MODE );
+
+        mLastLoginComid = share.getString( "lastLoginComid", "" );
+
+        bIsLoading = false;
+    }
+
+    public void saveSharedPreferences() {
+        if( bIsLoading )
+            return;
+
+        SharedPreferences share = getSharedPreferences( PREFER_NAME, MODE );
+        SharedPreferences.Editor editor = share.edit();
+
+        editor.putString( "lastLoginComid", mLastLoginComid );
+
+        editor.commit();
+    }
+
 }
