@@ -176,7 +176,6 @@ public class KYActivity extends Activity
 
                     YYSchedule.getInstance().scheduleOnceTime( 100, new YYSchedule.onScheduleAction() {
                         public void doSomething() {
-                            VBRequest.ky_comid = mLastLoginComid;
                             VBRequest.requestVerify( new VBRequest.onResponseListener() {
                                 public void onResponse( String data ) {
                                     hideWaitingDialog();
@@ -197,6 +196,8 @@ public class KYActivity extends Activity
 
                                             TextView tv_store_name = (TextView)findViewById( R.id.store_name );
                                             tv_store_name.setText( store_name );
+
+                                            VBRequest.ky_comid = mLastLoginComid;
 
                                             // 服务开启
                                             Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
