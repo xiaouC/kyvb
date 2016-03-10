@@ -50,16 +50,16 @@ public class VBRequest
         }
     };
 
-    public static void requestVerify( onResponseListener rsp_listener ) {
+    public static void requestVerify( String verify_comid, onResponseListener rsp_listener ) {
         String ts = getTimestamp();
         Log.v( "cocos", "timestamp : " + ts );
-        Log.v( "cocos", "comid : " + ky_comid );
+        Log.v( "cocos", "verify_comid : " + verify_comid );
         Log.v( "cocos", "ky_key : " + ky_key );
-        String md5 = stringToMD5( ky_comid + ky_key + ts );
+        String md5 = stringToMD5( verify_comid + ky_key + ts );
         Log.v( "cocos", "md5 : " + md5 );
 
         Map<String,String> postParams = new HashMap<String,String>();
-        postParams.put( "comid", ky_comid );
+        postParams.put( "comid", verify_comid );
         postParams.put( "time", ts );
         postParams.put( "ticket", md5 );
 

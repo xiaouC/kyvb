@@ -171,12 +171,10 @@ public class KYActivity extends Activity
                 public void onClick( View v ){
                     showWaitingDialog();
 
-                    mLastLoginComid = et.getText().toString();
-                    saveSharedPreferences();
-
+                    final String tmpLoginComid = et.getText().toString();
                     YYSchedule.getInstance().scheduleOnceTime( 100, new YYSchedule.onScheduleAction() {
                         public void doSomething() {
-                            VBRequest.requestVerify( new VBRequest.onResponseListener() {
+                            VBRequest.requestVerify( tmpLoginComid, new VBRequest.onResponseListener() {
                                 public void onResponse( String data ) {
                                     hideWaitingDialog();
 
@@ -197,7 +195,10 @@ public class KYActivity extends Activity
                                             TextView tv_store_name = (TextView)findViewById( R.id.store_name );
                                             tv_store_name.setText( store_name );
 
-                                            VBRequest.ky_comid = mLastLoginComid;
+                                            mLastLoginComid = tmpLoginComid;
+                                            VBRequest.ky_comid = tmpLoginComid;
+
+                                            saveSharedPreferences();
 
                                             // 服务开启
                                             Intent intentService = new Intent( KYActivity.this, VoiceBroadcastService.class );
